@@ -210,7 +210,6 @@
 		div.removeEventListener(`mouseup`, handleDragStop);
 
 		const dpr = img.naturalWidth / img.width;
-		console.log(dpr);
 
 		const height = parseInt(span.style.height, 10) * dpr;
 		const left = parseInt(span.style.left, 10) * dpr;
@@ -241,7 +240,12 @@
 		}
 
 		// Convert from object to array
-		const list = Object.keys(colors).map(key => ({ color: +key, count: colors[key] }));
+		let list = Object.keys(colors).map(key => ({ color: +key, count: colors[key] }));
+
+		const threshold = Math.floor(width * height / 1000);
+		if (threshold >= 1) {
+			list = list.filter(item => item.count > threshold);
+		}
 
 		// Calculate luminosity for each color
 		const contrast = list.map(item => ({ ...item, luminosity: calculateLuminosity(item.color) }));
