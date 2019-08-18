@@ -2,9 +2,10 @@
 	let canvas, dataUrl, div, img, span, stats, style;
 
 	function handleOnMessage (data, sender, sendResponse) {
-		sendResponse({});
+		sendResponse(`OK`);
 
-		cleanup();
+		// Clear all previous stuff. If active return immediately
+		if (clearAll()) return;
 
 		const doc = document.documentElement;
 
@@ -30,9 +31,10 @@
 				z-index: 9999;
 			}
 			#sk-contrast * {
-				background: inherit;
+				background: none;
 				border: 0;
 				color: inherit;
+				font: inherit;
 				margin: 0;
 				padding: 0;
 				z-index: 0;
@@ -57,13 +59,15 @@
 				cursor: crosshair;
 				height: 100vh;
 				left: 0;
+				outline-offset: -2px;
+				outline: 2px dashed #F00;
 				position: absolute;
 				top: 0;
 				width: 100vw;
 			}
 			#sk-stats {
-				background-color: #000;
-				border: 4px solid #fff;
+				background-color: #000D;
+				outline: 4px solid #8888;
 				color: white;
 				flex: 0 0 auto;
 				padding: 4px 8px;
@@ -71,19 +75,37 @@
 				white-space: nowrap;
 			}
 			#sk-stats h1 {
-				font: normal normal 20px/1.2 monospace;
-				padding: 0 0 8px;
+				font: bold normal 24px/1.5 monospace;
 			}
 			#sk-stats h2 {
-				font: normal bold 16px/1.2 monospace;
-				padding: 8px 0 4px;
-				border-bottom: 1px solid currentColor;
+				font: bold normal 20px/1.5 monospace;
 			}
 			#sk-stats div {
-				white-space: pre-wrap;
+				white-space: pre;
 			}
-			#sk-large-text {
-				font-weight: bold;
+			#sk-stats table {
+				border-collapse: collapse;
+				font: bold normal 24px/1 monospace;
+			}
+			#sk-stats td, #sk-stats th {
+				border-left: 1px dashed white;
+				border-top: 1px dashed white;
+				padding: 2px 4px;
+				text-align: left;
+			}
+
+			#sk-stats th:first-child {
+				border-left: 0;
+				border-right: 1px solid white;
+				font-size: 14px;
+				font-weight: normal;
+				padding-left: 0;
+			}
+			#sk-stats tr:first-child th {
+				border-bottom: 1px solid white;
+				border-top: 0;
+				font-size: 14px;
+				font-weight: normal;
 			}
 			#sk-window {
 				background-color: #8888;
@@ -120,14 +142,14 @@
 
 	function handleEscape(event) {
 		if (event.keyCode !== 27) return;
-		cleanup();
+		clearAll();
 	}
 
 	function handleScroll() {
-		cleanup();
+		clearAll();
 	}
 
-	function reset() {
+	function clearMeasurement() {
 		if (div) {
 			if (stats) {
 				if (canvas) {
@@ -144,7 +166,9 @@
 		}
 	}
 
-	function cleanup() {
+	function clearAll() {
+		let active = false;
+
 		document.removeEventListener(`keyup`, handleEscape);
 		document.removeEventListener(`scroll`, handleScroll);
 		document.removeEventListener(`resize`, handleScroll);
@@ -158,9 +182,10 @@
 			div.removeEventListener(`mousemove`, handleDragMove);
 			div.removeEventListener(`mouseup`, handleDragStop);
 
-			reset();
+			clearMeasurement();
 
 			if (img) {
+				active = true;
 				div.removeChild(img);
 				img = null;
 			}
@@ -168,6 +193,8 @@
 
 			div = null;
 		}
+
+		return active;
 	}
 
 	function handleDragStart(event) {
@@ -179,7 +206,7 @@
 
 		event.preventDefault();
 
-		reset();
+		clearMeasurement();
 
 		if (!span) span = document.createElement(`div`);
 		span.id = `sk-window`;
@@ -216,7 +243,7 @@
 		const top = parseInt(span.style.top, 10) * dpr;
 		const width = parseInt(span.style.width, 10) * dpr;
 
-		if (!height || !width) return reset();
+		if (!height || !width) return clearMeasurement();
 
 		// Create canvas element of the right size.
 		if (!canvas) canvas = document.createElement(`canvas`);
@@ -277,12 +304,12 @@
 			<div>background = #${rgb2hex(background.color)} <span id="sk-color" style="background:#${rgb2hex(background.color)}"></span></div>
 			<div>foreground = #${rgb2hex(foreground.color)} <span id="sk-color" style="background:#${rgb2hex(foreground.color)}"></span></div>
 			<div>constrast  = ${ratio > 10 ? ratio.toFixed(4) : ratio.toFixed(5)} ${ratio >= 7 ? `AAA` : (ratio >= 4.5 ? `AA` : ``)}</div>
-			<h2>Normal Text</h2>
-			<div>WCAG AA:  ${ratio>4.5 ? pass : fail}</div>
-			<div>WCAG AAA: ${ratio>7.0 ? pass : fail}</div>
-			<h2>Large/Bold Text</h2>
-			<div>WCAG AA:  ${ratio>3.0 ? pass : fail}</div>
-			<div>WCAG AAA: ${ratio>4.5 ? pass : fail}</div>
+			<h2>Results</h2>
+			<table>
+				<th></th><th>Normal text</th><th>Large/Bold text</th></tr>
+				<tr><th>WCAG  AA</th><td>${ratio>4.5 ? pass : fail}</td><td>${ratio>3.0 ? pass : fail}</td></tr>
+				<tr><th>WCAG AAA</th><td>${ratio>7.0 ? pass : fail}</td><td>${ratio>4.5 ? pass : fail}</td></tr>
+			</table>
 		`;
 		stats.appendChild(canvas);
 		div.appendChild(stats);
@@ -336,3 +363,5 @@
 	// Listen for messages from the background process.
 	chrome.runtime.onMessage.addListener(handleOnMessage);
 })();
+
+`OK`;
