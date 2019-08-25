@@ -1,5 +1,23 @@
 (function() {
-	let canvas, dataUrl, div, img, span, stats, style;
+	let div;
+
+	// Element id`s in the template
+	const elements = {
+		aaLarge: null, aaNormal: null, aaaLarge: null, aaaNormal: null, bgHex:
+		null, bgSample: null, canvas: null, contrast: null, fgHex: null,
+		fgSample: null, image: null, selection: null, stats: null
+	};
+
+	const state = {
+		bgColor: ``,
+		fgColor: ``,
+		ratio: 0,
+		x1: -1,
+		x2: 0,
+		y1: 0,
+		y2: 0,
+		zoom: 1
+	};
 
 	function handleOnMessage (data, sender, sendResponse) {
 		sendResponse(`OK`);
@@ -9,135 +27,26 @@
 
 		const doc = document.documentElement;
 
-		dataUrl = data.dataUrl;
-
-		style = document.createElement(`style`);
-		style.textContent = `
-			#sk-contrast {
-				align-items: center;
-				background: black;
-				box-sizing: border-box;
-				color: white;
-				display:flex;
-				font: normal normal 16px/1.5 monospace;
-				height: 100vh;
-				justify-content: center;
-				left: 0;
-				min-height: 100vh;
-				min-width: 100vw;
-				position: fixed;
-				top: 0;
-				width: 100vw;
-				z-index: 9999;
-			}
-			#sk-contrast * {
-				background: none;
-				border: 0;
-				color: inherit;
-				font: inherit;
-				margin: 0;
-				padding: 0;
-				z-index: 0;
-			}
-			#sk-canvas {
-				height: auto;
-				image-rendering: pixelated;
-				margin-top: 16px;
-				height: 228px;
-				width: 304px;
-				object-fit: contain;
-			}
-			#sk-color {
-				border-radius: 50%;
-				border: 1px solid white;
-				display: inline-block;
-				height: 1em;
-				vertical-align: -2px;
-				width: 1em;
-			}
-			#sk-image {
-				cursor: crosshair;
-				height: 100vh;
-				left: 0;
-				outline-offset: -2px;
-				outline: 2px dashed #F00;
-				position: absolute;
-				top: 0;
-				width: 100vw;
-			}
-			#sk-stats {
-				background-color: #000D;
-				outline: 4px solid #8888;
-				color: white;
-				flex: 0 0 auto;
-				padding: 4px 8px;
-				position: absolute;
-				white-space: nowrap;
-			}
-			#sk-stats h1 {
-				font: bold normal 24px/1.5 monospace;
-			}
-			#sk-stats h2 {
-				font: bold normal 20px/1.5 monospace;
-			}
-			#sk-stats div {
-				white-space: pre;
-			}
-			#sk-stats table {
-				border-collapse: collapse;
-				font: bold normal 24px/1 monospace;
-			}
-			#sk-stats td, #sk-stats th {
-				border-left: 1px dashed white;
-				border-top: 1px dashed white;
-				padding: 2px 4px;
-				text-align: left;
-			}
-
-			#sk-stats th:first-child {
-				border-left: 0;
-				border-right: 1px solid white;
-				font-size: 14px;
-				font-weight: normal;
-				padding-left: 0;
-			}
-			#sk-stats tr:first-child th {
-				border-bottom: 1px solid white;
-				border-top: 0;
-				font-size: 14px;
-				font-weight: normal;
-			}
-			#sk-window {
-				background-color: #8888;
-				border: 1px solid black;
-				outline-offset: -1px;
-				outline: 1px dashed white;
-				pointer-events: none;
-				position: absolute;
-			}
-
-			#sk-fail {
-				color: #f66;
-			}
-			#sk-pass {
-				color: #6f6;
-			}
-		`;
-		document.querySelector(`head`).appendChild(style);
-
-		img = document.createElement(`img`);
-		img.id = `sk-image`;
-		img.src = dataUrl;
-
+		// Create "root" element.
 		div = document.createElement(`div`);
+		div.attachShadow({ mode: `open` });
+		div.shadowRoot.addEventListener(`mousedown`, handleDragStart);
+		div.shadowRoot.innerHTML = data.html;
+
+		// Get the element instances
+		Object.keys(elements).forEach(id => {
+			elements[id] = div.shadowRoot.getElementById(id);
+		});
+
+		elements.image.src = data.dataUri;
+
+		state.zoom = data.zoom;
+
+		doc.appendChild(div);
+
 		document.addEventListener(`keyup`, handleEscape);
 		document.addEventListener(`scroll`, handleScroll);
 		document.addEventListener(`resize`, handleScroll);
-		div.addEventListener(`mousedown`, handleDragStart);
-		div.appendChild(img);
-		div.id = `sk-contrast`;
-
-		doc.appendChild(div);
 	}
 
 	function handleEscape(event) {
@@ -150,20 +59,10 @@
 	}
 
 	function clearMeasurement() {
-		if (div) {
-			if (stats) {
-				if (canvas) {
-					stats.removeChild(canvas);
-					canvas = null
-				}
-				div.removeChild(stats);
-				stats = null;
-			}
-			if (span) {
-				div.removeChild(span);
-				span = null;
-			}
-		}
+		if (!div) return;
+
+		state.left = -1;
+		state.ratio = 0;
 	}
 
 	function clearAll() {
@@ -173,87 +72,69 @@
 		document.removeEventListener(`scroll`, handleScroll);
 		document.removeEventListener(`resize`, handleScroll);
 
-		if (style) {
-			document.querySelector(`head`).removeChild(style);
-			style = null;
-		}
 		if (div) {
-			div.removeEventListener(`mousedown`, handleDragStart);
-			div.removeEventListener(`mousemove`, handleDragMove);
-			div.removeEventListener(`mouseup`, handleDragStop);
-
 			clearMeasurement();
-
-			if (img) {
-				active = true;
-				div.removeChild(img);
-				img = null;
-			}
 			document.documentElement.removeChild(div);
-
 			div = null;
 		}
+
+		// Release elements
+		Object.keys(elements).forEach(id => {
+			elements[id] = null;
+		});
 
 		return active;
 	}
 
 	function handleDragStart(event) {
-		if (event.altKey) return;
+		// No modifier keys
+		if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+		// Only left button
 		if (event.button !== 0) return;
-		if (event.ctrlKey) return;
-		if (event.metaKey) return;
-		if (event.shiftKey) return;
 
 		event.preventDefault();
 
 		clearMeasurement();
 
-		if (!span) span = document.createElement(`div`);
-		span.id = `sk-window`;
-		span.dataset.x = event.clientX;
-		span.dataset.y = event.clientY;
-		div.appendChild(span);
+		state.x1 = event.clientX;
+		state.y1 = event.clientY;
 
-		div.addEventListener(`mousemove`, handleDragMove);
-		div.addEventListener(`mouseup`, handleDragStop);
+		div.shadowRoot.addEventListener(`mousemove`, handleDragMove);
+		div.shadowRoot.addEventListener(`mouseup`, handleDragStop);
 	}
 
 	function handleDragMove(event) {
-		const left   = Math.min(event.clientX, span.dataset.x);
-		const top    = Math.min(event.clientY, span.dataset.y);
-		const width  = Math.max(event.clientX, span.dataset.x) - left;
-		const height = Math.max(event.clientY, span.dataset.y) - top;
+		state.x2 = event.clientX;
+		state.y2 = event.clientY;
 
-		span.style.height = height + `px`;
-		span.style.width  = width + `px`;
-		span.style.top    = top + `px`;
-		span.style.left   = left + `px`;
+		render();
 	}
 
 	function handleDragStop(event) {
 		event.preventDefault();
 
-		div.removeEventListener(`mousemove`, handleDragMove);
-		div.removeEventListener(`mouseup`, handleDragStop);
+		const { canvas, image, selection } = elements;
 
-		const dpr = img.naturalWidth / img.width;
+		div.shadowRoot.removeEventListener(`mousemove`, handleDragMove);
+		div.shadowRoot.removeEventListener(`mouseup`, handleDragStop);
 
-		const height = parseInt(span.style.height, 10) * dpr;
-		const left = parseInt(span.style.left, 10) * dpr;
-		const top = parseInt(span.style.top, 10) * dpr;
-		const width = parseInt(span.style.width, 10) * dpr;
+		const dpr = image.naturalWidth / image.width;
+
+		const style = selection.style;
+		const height = parseInt(style.height, 10) * dpr;
+		const left   = parseInt(style.left, 10) * dpr;
+		const top    = parseInt(style.top, 10) * dpr;
+		const width  = parseInt(style.width, 10) * dpr;
 
 		if (!height || !width) return clearMeasurement();
 
-		// Create canvas element of the right size.
-		if (!canvas) canvas = document.createElement(`canvas`);
+		// Resize canvas element to the right size.
 		canvas.height = height;
-		canvas.id = `sk-canvas`;
 		canvas.width = width;
 
 		// Copy over the rectangle
 		const ctx = canvas.getContext(`2d`);
-		ctx.drawImage(img, left, top, width, height, 0, 0, width, height);
+		ctx.drawImage(image, left, top, width, height, 0, 0, width, height);
 
 		// Get raw image data
 		const data = ctx.getImageData(0,0,width,height).data;
@@ -275,44 +156,66 @@
 		}
 
 		// Calculate luminosity for each color
-		const contrast = list.map(item => ({ ...item, luminosity: calculateLuminosity(item.color) }));
+		const luminosity = list.map(item => ({ ...item, luminosity: calculateLuminosity(item.color) }));
 
 		// Order array on luminosity
-		contrast.sort((a, b) => a.luminosity - b.luminosity);
+		luminosity.sort((a, b) => a.luminosity - b.luminosity);
 
 		// Get the extremes
-		const max = contrast[0];
-		const min = contrast[contrast.length - 1];
+		const max = luminosity[0];
+		const min = luminosity[luminosity.length - 1];
 
 		// Background is the one with the most occurrences
 		const background = min.count > max.count ? min : max;
 		// Foreground is the other one
 		const foreground = min.count > max.count ? max : min;
 
-		// Calculate the contrast ratio
-		const ratio = calculateRatio(min.luminosity, max.luminosity);
+		// Store measurement
+		state.bgColor = `#` + rgb2hex(background.color);
+		state.fgColor = `#` + rgb2hex(foreground.color);
+		state.ratio = calculateRatio(min.luminosity, max.luminosity);
 
-		const fail = `<span id="sk-fail">Fail</span>`;
-		const pass = `<span id="sk-pass">Pass</span>`;
+		render();
+	}
 
-		// Create display element with the gathered stats.
-		if (!stats) stats = document.createElement(`div`);
-		stats.id = `sk-stats`;
-		stats.innerHTML = `
-			<h1>Contrast</h1>
-			<h2>Measurement</h2>
-			<div>background = #${rgb2hex(background.color)} <span id="sk-color" style="background:#${rgb2hex(background.color)}"></span></div>
-			<div>foreground = #${rgb2hex(foreground.color)} <span id="sk-color" style="background:#${rgb2hex(foreground.color)}"></span></div>
-			<div>constrast  = ${ratio > 10 ? ratio.toFixed(4) : ratio.toFixed(5)} ${ratio >= 7 ? `AAA` : (ratio >= 4.5 ? `AA` : ``)}</div>
-			<h2>Results</h2>
-			<table>
-				<th></th><th>Normal text</th><th>Large/Bold text</th></tr>
-				<tr><th>WCAG  AA</th><td>${ratio>4.5 ? pass : fail}</td><td>${ratio>3.0 ? pass : fail}</td></tr>
-				<tr><th>WCAG AAA</th><td>${ratio>7.0 ? pass : fail}</td><td>${ratio>4.5 ? pass : fail}</td></tr>
-			</table>
-		`;
-		stats.appendChild(canvas);
-		div.appendChild(stats);
+	function render() {
+		const {
+			aaLarge, aaNormal, aaaLarge, aaaNormal, bgHex, bgSample,
+			contrast, fgHex, fgSample, selection, stats
+		} = elements;
+
+		const { bgColor, fgColor, ratio, x1, x2, y1, y2, zoom } = state;
+
+		// Position selection window
+		const style = selection.style;
+		selection.classList.toggle(`is-visiable`, x1 >= 0);
+		if (x1 >= 0) {
+			const left   = Math.min(x1, x2);
+			const top    = Math.min(y1, y2);
+
+			const height = Math.max(y1, y2) - top;
+			const width  = Math.max(x1, x2) - left;
+
+			style.height = height + `px`;
+			style.width  = width + `px`;
+			style.top    = top + `px`;
+			style.left   = left + `px`;
+		}
+
+		// Fill in the stats on measurement
+		stats.classList.toggle(`is-visible`, ratio > 0);
+		if (ratio > 0) {
+			stats.style.zoom = 1 / zoom;
+			aaLarge.classList.toggle(`pass`, ratio>3.0);
+			aaNormal.classList.toggle(`pass`, ratio>4.5);
+			aaaLarge.classList.toggle(`pass`, ratio>4.5);
+			aaaNormal.classList.toggle(`pass`, ratio>7.0);
+			bgHex.innerText = bgColor;
+			bgSample.style.background = bgColor;
+			contrast.innerText = ratio > 10 ? ratio.toFixed(4) : ratio.toFixed(5);
+			fgHex.innerHTML = fgColor;
+			fgSample.style.background = fgColor;
+		}
 	}
 
 	function calculateRatio(l1, l2) {

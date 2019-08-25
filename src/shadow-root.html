@@ -1,0 +1,175 @@
+<style>
+	:host {
+		align-items: center;
+		background: black;
+		border: 0;
+		box-sizing: border-box;
+		color: white;
+		display:flex;
+		font: normal normal 16px/1.5 monospace;
+		height: 100vh;
+		justify-content: center;
+		left: 0;
+		margin: 0;
+		min-height: 100vh;
+		min-width: 100vw;
+		opacity: 1;
+		padding: 0;
+		position: fixed;
+		top: 0;
+		vertical-align: initial;
+		width: 100vw;
+		z-index: 2147483647;
+	}
+
+	* {
+		background: none;
+		border: 0;
+		color: inherit;
+		font: inherit;
+		margin: 0;
+		opacity: inherit;
+		padding: 0;
+		vertical-align: inherit;
+		z-index: 0;
+	}
+
+	#canvas {
+		max-height: 228px;
+		image-rendering: pixelated;
+		margin-top: 16px;
+		object-fit: contain;
+		max-width: 304px;
+	}
+	#color {
+		border-radius: 50%;
+		border: 1px solid white;
+		display: inline-block;
+		height: 1em;
+		vertical-align: -2px;
+		width: 1em;
+	}
+	#image {
+		cursor: crosshair;
+		height: 100vh;
+		left: 0;
+		outline-offset: -2px;
+		outline: 2px dashed #F00;
+		position: absolute;
+		top: 0;
+		width: 100vw;
+	}
+	#stats {
+		background-color: #000D;
+		color: white;
+		display: none;
+		flex: 0 0 auto;
+		outline: 4px solid #8888;
+		padding: 4px 8px;
+		white-space: nowrap;
+	}
+	#stats.is-visible {
+		display: block;
+	}
+	#stats h1 {
+		font: bold normal 24px/1.5 monospace;
+	}
+	#stats h2 {
+		font: bold normal 20px/1.5 monospace;
+	}
+	#stats div {
+		font-family: monospace;
+	}
+	#stats table {
+		border-collapse: collapse;
+		font: bold normal 24px/1 monospace;
+		table-layout: fixed;
+		width: auto;
+	}
+	#stats td,
+	#stats th {
+		border-left: 1px dashed white;
+		border-top: 1px dashed white;
+		padding: 2px 4px;
+		text-align: left;
+	}
+	#stats th:first-child {
+		border-left: 0;
+		border-right: 1px solid white;
+		font-size: 14px;
+		font-weight: normal;
+		padding-left: 0;
+	}
+	#stats tr:first-child th {
+		border-bottom: 1px solid white;
+		border-top: 0;
+		font-size: 14px;
+		font-weight: normal;
+	}
+	#selection {
+		background-color: #8888;
+		border: 1px solid black;
+		outline-offset: -1px;
+		outline: 1px dashed white;
+		pointer-events: none;
+		position: absolute;
+	}
+	.passfail:before {
+		color: #f66;
+		content: 'Fail';
+	}
+	.pass:before {
+		color: #6f6;
+		content: 'Pass';
+	}
+</style>
+<img id="image"/>
+<div id="selection"></div>
+<div id="stats">
+	<h1>Contrast</h1>
+	<h2>Measurement</h2>
+	<div>
+		background =
+		<span id="bgHex"></span>
+		<span id="bgSample"></span>
+	</div>
+	<div>
+		foreground =
+		<span id="fgHex"></span>
+		<span id="fgSample"></span>
+	</div>
+	<div>
+		constrast  =
+		<span id="contrast"></span>
+	</div>
+	<h2>Results</h2>
+	<table>
+		<tbody>
+			<tr>
+				<th>
+				</th>
+				<th>Normal text</th>
+				<th>Large/Bold text</th>
+			</tr>
+			<tr>
+				<th>WCAG  AA</th>
+				<td>
+					<span class="passfail" id="aaNormal"></span>
+				</td>
+				<td>
+					<span class="passfail" id="aaLarge"></span>
+				</td>
+			</tr>
+			<tr>
+				<th>WCAG AAA</th>
+				<td>
+					<span class="passfail" id="aaaNormal"></span>
+				</td>
+				<td>
+					<span class="passfail" id="aaaLarge"></span>
+				</td>
+			</tr>
+		</tbody>
+	</table>
+	<canvas id="canvas"></canvas>
+</div>

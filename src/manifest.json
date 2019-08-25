@@ -8,6 +8,9 @@
 			"description": "Toggle extension"
 		}
 	},
+	"web_accessible_resources": [
+		"shadow-root.html"
+	],
 	"browser_action": {
 		"default_icon": {
 			"16": "icon-16.png",
@@ -25,5 +28,5 @@
 	"name": "SK Contrast",
 	"permissions": [ "activeTab" ],
 	"short_name": "SK Contrast",
-	"version": "1.0.2"
+	"version": "1.0.3"
 }
