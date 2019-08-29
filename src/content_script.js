@@ -106,25 +106,27 @@
 	function handleDragMove(event) {
 		state.x2 = event.clientX;
 		state.y2 = event.clientY;
-
 		render();
 	}
 
 	function handleDragStop(event) {
 		event.preventDefault();
 
+		state.x2 = event.clientX;
+		state.y2 = event.clientY;
+
 		const { canvas, image, selection } = elements;
+		const { x1, x2, y1, y2 } = state;
 
 		div.shadowRoot.removeEventListener(`mousemove`, handleDragMove);
 		div.shadowRoot.removeEventListener(`mouseup`, handleDragStop);
 
 		const dpr = image.naturalWidth / image.width;
 
-		const style = selection.style;
-		const height = parseInt(style.height, 10) * dpr;
-		const left   = parseInt(style.left, 10) * dpr;
-		const top    = parseInt(style.top, 10) * dpr;
-		const width  = parseInt(style.width, 10) * dpr;
+		const left   = dpr * Math.min(x1, x2);
+		const top    = dpr * Math.min(y1, y2);
+		const height = dpr * Math.max(y1, y2) - top;
+		const width  = dpr * Math.max(x1, x2) - left;
 
 		if (!height || !width) return clearMeasurement();
 
