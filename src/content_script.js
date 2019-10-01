@@ -61,7 +61,7 @@
 	function clearMeasurement() {
 		if (!div) return;
 
-		state.left = -1;
+		state.x1 = -1;
 		state.ratio = 0;
 	}
 
@@ -95,6 +95,7 @@
 		event.preventDefault();
 
 		clearMeasurement();
+		render();
 
 		state.x1 = event.clientX;
 		state.y1 = event.clientY;
@@ -190,7 +191,8 @@
 
 		// Position selection window
 		const style = selection.style;
-		selection.classList.toggle(`is-visiable`, x1 >= 0);
+		selection.classList.toggle(`hidden`, x1 < 0);
+		console.log(selection.className);
 		if (x1 >= 0) {
 			const left   = Math.min(x1, x2);
 			const top    = Math.min(y1, y2);

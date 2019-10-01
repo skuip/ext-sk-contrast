@@ -1,2 +1,2 @@
-dist/extension.zip
+dist/**.zip
 node_modules

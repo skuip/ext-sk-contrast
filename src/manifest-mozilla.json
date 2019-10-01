@@ -1,7 +1,6 @@
 {
 	"background": {
-		"scripts": [ "background.js" ],
-		"persistent": false
+		"scripts": [ "background.js" ]
 	},
 	"commands": {
 		"_execute_browser_action": {
@@ -26,7 +25,7 @@
 	},
 	"manifest_version": 2,
 	"name": "SK Contrast",
-	"permissions": [ "activeTab" ],
+	"permissions": [ "<all_urls>" ],
 	"short_name": "SK Contrast",
-	"version": "1.0.3"
+	"version": "1.0.4"
 }

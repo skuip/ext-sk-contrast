@@ -80,6 +80,12 @@
 	#stats div {
 		font-family: monospace;
 	}
+	#stats div :last-child {
+		border-radius: 50%;
+		display: inline-block;
+		height: 1em;
+		width: 1em;
+	}
 	#stats table {
 		border-collapse: collapse;
 		font: bold normal 24px/1 monospace;
@@ -113,6 +119,9 @@
 		outline: 1px dashed white;
 		pointer-events: none;
 		position: absolute;
+	}
+	#selection.hidden {
+		display: none;
 	}
 	.passfail:before {
 		color: #f66;

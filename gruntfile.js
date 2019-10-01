@@ -51,16 +51,32 @@ module.exports = function (grunt)
 				other:
 				{
 					files: [ 'src/*' ],
-					tasks: [ 'zip' ]
+					tasks: [ 'zip:chromium', 'zip:mozilla' ]
 				}
 			},
 
 			zip: {
-				dist: {
-					cwd: 'src/',
+				chromium: {
 					src: [ 'src/*' ],
-					dest: 'dist/extension.zip',
-					compression: 'DEFLATE'
+					dest: 'dist/chromium.zip',
+					compression: 'DEFLATE',
+					router: function (filepath) {
+						if (filepath.match(/-mozilla/)) return null;
+						filepath = filepath.replace(/src\//, '');
+						filepath = filepath.replace(/-chromium/, '');
+						return filepath;
+					}
+				},
+				mozilla: {
+					src: [ 'src/*' ],
+					dest: 'dist/mozilla.zip',
+					compression: 'DEFLATE',
+					router: function (filepath) {
+						if (filepath.match(/-chromium/)) return null;
+						filepath = filepath.replace(/src\//, '');
+						filepath = filepath.replace(/-mozilla/, '');
+						return filepath;
+					}
 				}
 			}
 		});
