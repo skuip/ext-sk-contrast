@@ -116,7 +116,7 @@
 		state.x2 = event.clientX;
 		state.y2 = event.clientY;
 
-		const { canvas, image, selection } = elements;
+		const { canvas, image } = elements;
 		const { x1, x2, y1, y2 } = state;
 
 		div.shadowRoot.removeEventListener(`mousemove`, handleDragMove);

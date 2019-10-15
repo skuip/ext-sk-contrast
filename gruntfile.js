@@ -61,9 +61,10 @@ module.exports = function (grunt)
 					dest: 'dist/chromium.zip',
 					compression: 'DEFLATE',
 					router: function (filepath) {
+						// Skip mozilla files
 						if (filepath.match(/-mozilla/)) return null;
+
 						filepath = filepath.replace(/src\//, '');
-						filepath = filepath.replace(/-chromium/, '');
 						return filepath;
 					}
 				},
@@ -72,9 +73,11 @@ module.exports = function (grunt)
 					dest: 'dist/mozilla.zip',
 					compression: 'DEFLATE',
 					router: function (filepath) {
-						if (filepath.match(/-chromium/)) return null;
-						filepath = filepath.replace(/src\//, '');
+						// Skip manifest, use the mozilla one
+						if (filepath.match(/manifest.json/)) return null;
 						filepath = filepath.replace(/-mozilla/, '');
+
+						filepath = filepath.replace(/src\//, '');
 						return filepath;
 					}
 				}
