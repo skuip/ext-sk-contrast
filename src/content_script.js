@@ -3,9 +3,50 @@
 
 	// Element id`s in the template
 	const elements = {
-		aaLarge: null, aaNormal: null, aaaLarge: null, aaaNormal: null, bgHex:
-		null, bgSample: null, canvas: null, contrast: null, fgHex: null,
+		bgHex: null, bgSample: null, canvas: null, contrast: null, fgHex: null,
 		fgSample: null, grid: null, image: null, selection: null, stats: null
+	};
+
+	const colorNames = {
+		'007398': `Primary<br/>elsevier blue`,
+		'009ECE': `Information`,
+		'073973': `Tertiary<br/>blue3`,
+		'0C7DBB': `Link blue`,
+		'29A61B': `Confirmation`,
+		'2E2E2E': `Grey8`,
+		'3679E0': `Tertiary<br/>blue2`,
+		'3C1276': `Tertiary<br/>purple3`,
+		'44C6F4': `Information<br/>ondark`,
+		'496E01': `Tertiary<br/>green3`,
+		'505050': `Grey7`,
+		'53565A': `Base dark<br/>gray`,
+		'53B848': `Confirmation<br/>ondark`,
+		'661CCA': `Tertiary<br/>purple2`,
+		'737373': `Grey6`,
+		'8ED700': `Tertiary<br/>green2`,
+		'969696': `Grey5`,
+		'976500': `Tertiary<br/>yellow3`,
+		'A92B1D': `Tertiary<br/>red3`,
+		'ACD2FF': `Tertiary<br/>blue1`,
+		'B9B9B9': `Grey4`,
+		'BB84FF': `Tertiary<br/>purple1`,
+		'C0F25D': `Tertiary<br/>green1`,
+		'C83727': `Warning`,
+		'CDE4FF': `Secondary<br/>pale blue`,
+		'DCDCDC': `Grey3`,
+		'DCDCDD': `Secondary<br/>cool grey 1`,
+		'E9711C': `Elsevier<br/>orange`,
+		'EBEBEB': `Grey2`,
+		'F5F5F5': `Grey1`,
+		'F73E29': `Tertiary<br/>red2`,
+		'FDD300': `Tertiary<br/>yellow2`,
+		'FEB7B7': `Tertiary<br/>red1`,
+		'FF6A5A': `Warning<br/>ondark`,
+		'FF6C00': `Primary<br/>orange`,
+		'FF8200': `Elsevier<br/>orange ondark`,
+		'FFEC84': `Tertiary<br/>yellow1`,
+		'FFF0E4': `Secondary<br/>pale orange`,
+		'FFFFFF': `White`
 	};
 
 	const state = {
@@ -167,9 +208,18 @@
 			...item
 		}));
 
+		// Order array on usage
 		luminosity.sort((a, b) => b.count - a.count);
 
+		// Try to get rid of the non relevant colors by removing the color
+		// which are very close to more used colors. Also by removing colors
+		// with a very low usage ignoring the background color.
+		const delta = luminosity[0].percentage / (100 - luminosity[0].percentage);
 		for (let i = 0; i < luminosity.length - 1; i++) {
+			// Calculate percentage without the background color.
+			let percentage = luminosity[i].percentage * delta;
+			if (percentage < 1) luminosity[i].disabled = true;
+
 			if (luminosity[i].disabled) continue;
 			for (let j = i + 1; j < luminosity.length; j++) {
 				const d = distance(luminosity[i].color, luminosity[j].color);
@@ -186,7 +236,7 @@
 
 		// Background is the one with the most occurrences
 		const background = min.count > max.count ? min : max;
-		// Foreground is the other one
+		// Foreground is the other one with the most contrast
 		const foreground = min.count > max.count ? max : min;
 
 		// Store measurement
@@ -200,7 +250,7 @@
 
 	function render() {
 		const {
-			aaLarge, aaNormal, aaaLarge, aaaNormal, bgHex, bgSample,
+			bgHex, bgSample,
 			contrast, fgHex, fgSample, grid, selection, stats
 		} = elements;
 
@@ -228,10 +278,6 @@
 		if (ratio <= 0) return;
 
 		stats.style.zoom = 1 / zoom;
-		aaLarge.classList.toggle(`pass`, ratio>3.0);
-		aaNormal.classList.toggle(`pass`, ratio>4.5);
-		aaaLarge.classList.toggle(`pass`, ratio>4.5);
-		aaaNormal.classList.toggle(`pass`, ratio>7.0);
 		bgHex.innerText = bgColor;
 		bgSample.style.background = bgColor;
 		contrast.innerText = ratio > 10 ? ratio.toFixed(4) : ratio.toFixed(5);
@@ -245,14 +291,16 @@
 		const colors = luminosity.filter(a => !a.disabled);
 		colors.sort((a, b) => b.count - a.count);
 		colors.splice(10);
-
-		console.log(luminosity);
-		console.log(colors);
+		colors.sort((a, b) => a.luminosity - b.luminosity);
 
 		let hexes = `<tr><th></th>`
 		let percs = `<tr><th></th>`
-		for (let ix = 0; ix < colors.length; ix++) {
+		//for (let ix = 0; ix < colors.length; ix++) {
+		for (let ix = colors.length -1; ix > 0; ix--) {
 			const lx = colors[ix];
+			let hexColor = rgb2hex(lx.color).toUpperCase();
+			let nameColor = colorNames[hexColor] || ``;
+			nameColor += `<br/>` + hexColor;
 
 			let th = `<th class="`;
 			if ( calculateRatio(lx.luminosity, 0.05) < calculateRatio(lx.luminosity, 1.05)) {
@@ -260,18 +308,23 @@
 			} else {
 				th += `black`;
 			}
-			th += `" style="background:#` + rgb2hex(lx.color) + `">`;
+			th += `" style="background:#${hexColor}"`;
+			th += `" title="${nameColor}">`;
 
-			hexes += th + `<span>` + rgb2hex(lx.color).toUpperCase() + `</span></th>`;
+			hexes += th + `<span>${nameColor}</span></th>`;
 			percs += th + lx.percentage.toFixed(2).substr(0, 4) + `%</th>`;
 		}
 		hexes += `</tr>`;
 		percs += `</tr>`;
 
-		let html = hexes + percs;
+		let html = `<thead>${hexes}${percs}</thead>`;
 
-		for (let iy = 1; iy < colors.length; iy++) {
+		//for (let iy = colors.length - 1; iy >= 1; iy--) {
+		for (let iy = 0; iy < colors.length; iy++) {
 			const ly = colors[iy];
+			let hexColor = rgb2hex(ly.color).toUpperCase();
+			let nameColor = colorNames[hexColor] || ``;
+			nameColor += `<br/>` + hexColor;
 
 			html += `<tr><th class="`
 			if ( calculateRatio(ly.luminosity, 0.05) < calculateRatio(ly.luminosity, 1.05)) {
@@ -279,15 +332,15 @@
 			} else {
 				html += `black`;
 			}
-			html += `" style="background:#` + rgb2hex(ly.color) + `">` + rgb2hex(ly.color).toUpperCase();
-			html += `</th>`;
+			html += `" style="background:#${hexColor}" title="${nameColor}">${nameColor}</th>`;
 
-			for (let ix = 0; ix < colors.length; ix++) {
+			//for (let ix = 0; ix < colors.length; ix++) {
+			for (let ix = colors.length -1; ix > 0; ix--) {
 				const lx = colors[ix];
 
 				const ratio = calculateRatio(lx.luminosity, ly.luminosity);
 
-				if (iy > ix) {
+				if (iy <= ix) {
 					html += `<td style="background:`;
 					if (ratio < 3.0) {
 						html += `#D00`;

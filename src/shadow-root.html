@@ -1,4 +1,5 @@
 <style>
+	#main,
 	:host {
 		align-items: center;
 		background: black;
@@ -37,7 +38,6 @@
 	#canvas {
 		max-height: 228px;
 		image-rendering: pixelated;
-		margin-top: 16px;
 		object-fit: contain;
 		max-width: 304px;
 	}
@@ -68,43 +68,18 @@
 	}
 	#stats h2 {
 		font: bold normal 20px/1.5 monospace;
+		margin: 16px 0 0;
 	}
 	#stats div {
 		font-family: monospace;
 	}
 	.colorSample {
 		border-radius: 50%;
-		border: 0.6px solid white;
+		border: 1px solid white;
 		display: inline-block;
 		height: 1em;
 		vertical-align: -2px;
 		width: 1em;
-	}
-	#passfail {
-		border-collapse: collapse;
-		font: bold normal 24px/1 monospace;
-		table-layout: fixed;
-		width: auto;
-	}
-	#passfail td,
-	#passfail th {
-		border-left: 1px dashed white;
-		border-top: 1px dashed white;
-		padding: 2px 4px;
-		text-align: left;
-	}
-	#passfail th:first-child {
-		border-left: 0;
-		border-right: 1px solid white;
-		font-size: 14px;
-		font-weight: normal;
-		padding-left: 0;
-	}
-	#passfail tr:first-child th {
-		border-bottom: 1px solid white;
-		border-top: 0;
-		font-size: 14px;
-		font-weight: normal;
 	}
 	#selection {
 		background-color: #8888;
@@ -130,11 +105,11 @@
 		border-collapse: collapse;
 		font-size: 16px;
 		text-align: right;
-		margin-top: 1em;
 	}
 	#grid td {
 		border: 1px solid white;
 		padding: 0 4px;
+		vertical-align: middle;
 	}
 	#grid th {
 		border: 1px solid white;
@@ -143,11 +118,11 @@
 	}
 	#grid th span {
 		display: block;
-		height: 4em;
+		height: auto;
 		line-height: 1;
-		margin: auto;
-		padding: 0 0 8px;
-		writing-mode: vertical-lr;
+		margin: 0 0 0 66.67%;
+		padding: 8px 0;
+		writing-mode: vertical-rl;
 	}
 	#grid th.white {
 		color: white;
@@ -162,54 +137,31 @@
 		width: 16px;
 	}
 </style>
-<img id="image"/>
-<div id="selection"></div>
-<div id="stats">
-	<h1>Contrast</h1>
-	<h2>Measurement</h2>
-	<div>
-		background =
-		<span class="colorSample" id="bgSample"></span>
-		<span id="bgHex"></span>
+<div id="main">
+	<img alt="Screenshot image" id="image" src="data:" />
+	<div id="selection"></div>
+	<div id="stats">
+		<h1>Contrast</h1>
+		<h2>Measurement</h2>
+		<div>
+				background =
+			<span class="colorSample" id="bgSample"></span>
+			<span id="bgHex"></span>
+		</div>
+		<div>
+				foreground =
+			<span class="colorSample" id="fgSample"></span>
+			<span id="fgHex"></span>
+		</div>
+		<div>
+				constrast  =
+			<span id="contrast"></span>
+		</div>
+
+		<h2>Results</h2>
+		<table id="grid"></table>
+
+		<h2>Captured image</h2>
+		<canvas id="canvas"></canvas>
 	</div>
-	<div>
-		foreground =
-		<span class="colorSample" id="fgSample"></span>
-		<span id="fgHex"></span>
-	</div>
-	<div>
-		constrast  =
-		<span id="contrast"></span>
-	</div>
-	<h2>Results</h2>
-	<table id="passfail">
-		<tbody>
-			<tr>
-				<th>
-				</th>
-				<th>Normal text</th>
-				<th>Large/Bold text</th>
-			</tr>
-			<tr>
-				<th>WCAG  AA</th>
-				<td>
-					<span class="passfail" id="aaNormal"></span>
-				</td>
-				<td>
-					<span class="passfail" id="aaLarge"></span>
-				</td>
-			</tr>
-			<tr>
-				<th>WCAG AAA</th>
-				<td>
-					<span class="passfail" id="aaaNormal"></span>
-				</td>
-				<td>
-					<span class="passfail" id="aaaLarge"></span>
-				</td>
-			</tr>
-		</tbody>
-	</table>
-	<table id="grid"></table>
-	<canvas id="canvas"></canvas>
 </div>
