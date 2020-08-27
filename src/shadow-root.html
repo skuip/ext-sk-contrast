@@ -6,7 +6,7 @@
 		border: 0;
 		box-sizing: border-box;
 		color: white;
-		display:flex;
+		display: flex;
 		font: normal normal 16px/1.5 monospace;
 		height: 100vh;
 		justify-content: center;
@@ -33,26 +33,27 @@
 		padding: 0;
 		vertical-align: inherit;
 		z-index: 0;
+		line-height: 1.25;
 	}
 
 	#canvas {
 		max-height: 228px;
 		image-rendering: pixelated;
 		object-fit: contain;
-		max-width: 304px;
+		max-width: 600px;
 	}
 	#image {
 		cursor: crosshair;
 		height: 100vh;
 		left: 0;
 		outline-offset: -2px;
-		outline: 2px dashed #F00;
+		outline: 2px dashed #f00;
 		position: absolute;
 		top: 0;
 		width: 100vw;
 	}
 	#stats {
-		background-color: #000D;
+		background-color: #000d;
 		color: white;
 		display: none;
 		flex: 0 0 auto;
@@ -126,39 +127,47 @@
 	}
 	#grid th.white {
 		color: white;
-	}		
+	}
 	#grid th.black {
 		color: black;
-	}		
+	}
 	#grid span {
 		border-radius: 50%;
 		display: inline-block;
 		height: 16px;
 		width: 16px;
 	}
+	#xaxis {
+		background: red;
+		cursor: crosshair;
+		height: 1px;
+		left: 0;
+		pointer-events: none;
+		position: absolute;
+		right: 0;
+		top: 0;
+		will-change: top;
+	}
+	#yaxis {
+		background: red;
+		bottom: 0;
+		cursor: crosshair;
+		left: 0;
+		pointer-events: none;
+		position: absolute;
+		top: 0;
+		width: 1px;
+		will-change: left;
+	}
 </style>
 <div id="main">
 	<img alt="Screenshot image" id="image" src="data:" />
+	<div id="xaxis"></div>
+	<div id="yaxis"></div>
 	<div id="selection"></div>
 	<div id="stats">
 		<h1>Contrast</h1>
-		<h2>Measurement</h2>
-		<div>
-				background =
-			<span class="colorSample" id="bgSample"></span>
-			<span id="bgHex"></span>
-		</div>
-		<div>
-				foreground =
-			<span class="colorSample" id="fgSample"></span>
-			<span id="fgHex"></span>
-		</div>
-		<div>
-				constrast  =
-			<span id="contrast"></span>
-		</div>
 
-		<h2>Results</h2>
 		<table id="grid"></table>
 
 		<h2>Captured image</h2>

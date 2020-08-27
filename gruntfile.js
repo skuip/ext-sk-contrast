@@ -62,7 +62,7 @@ module.exports = function (grunt)
 					compression: 'DEFLATE',
 					router: function (filepath) {
 						// Skip mozilla files
-						if (filepath.match(/-mozilla/)) return null;
+						if (filepath.match(/manifest-mozilla.json/)) return null;
 
 						filepath = filepath.replace(/src\//, '');
 						return filepath;
@@ -73,6 +73,7 @@ module.exports = function (grunt)
 					dest: 'dist/mozilla.zip',
 					compression: 'DEFLATE',
 					router: function (filepath) {
+						console.log(filepath);
 						// Skip manifest, use the mozilla one
 						if (filepath.match(/manifest.json/)) return null;
 						filepath = filepath.replace(/-mozilla/, '');

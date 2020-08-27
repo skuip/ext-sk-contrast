@@ -1,6 +1,6 @@
 {
 	"background": {
-		"scripts": [ "background.js" ],
+		"scripts": ["background.js"],
 		"persistent": false
 	},
 	"commands": {
@@ -8,9 +8,7 @@
 			"description": "Toggle extension"
 		}
 	},
-	"web_accessible_resources": [
-		"shadow-root.html"
-	],
+	"web_accessible_resources": ["shadow-root.html"],
 	"browser_action": {
 		"default_icon": {
 			"16": "icon-16.png",
@@ -26,7 +24,7 @@
 	},
 	"manifest_version": 2,
 	"name": "SK Contrast",
-	"permissions": [ "activeTab" ],
+	"permissions": ["activeTab"],
 	"short_name": "SK Contrast",
 	"version": "1.0.5"
 }
