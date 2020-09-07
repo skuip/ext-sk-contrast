@@ -4,13 +4,18 @@
 	// Element id's in the template
 	const elements = {
 		canvas: null,
+		color1: null,
+		color2: null,
 		contrast: null,
 		grid: null,
 		image: null,
+		ratio: null,
 		selection: null,
 		stats: null,
-		xaxis: null,
-		yaxis: null,
+		xaxis1: null,
+		xaxis2: null,
+		yaxis1: null,
+		yaxis2: null,
 	};
 
 	const colorNames = {
@@ -56,8 +61,8 @@
 	};
 
 	const state = {
+		colors: [],
 		drag: false,
-		luminosity: [],
 		x1: -1,
 		x2: 0,
 		y1: 0,
@@ -108,7 +113,7 @@
 	function clearMeasurement() {
 		if (!div) return;
 		state.x1 = -1;
-		state.luminosity = [];
+		state.colors = [];
 	}
 
 	function clearAll() {
@@ -147,7 +152,11 @@
 		state.x1 = event.clientX;
 		state.y1 = event.clientY;
 		state.drag = true;
-		state.luminosity = [];
+		state.colors = [];
+
+		const { xaxis1, yaxis1 } = elements;
+		xaxis1.style.top = event.clientY + 'px';
+		yaxis1.style.left = event.clientX + 'px';
 
 		div.shadowRoot.addEventListener('mouseup', handleDragStop);
 	}
@@ -157,10 +166,13 @@
 			state.x2 = event.clientX;
 			state.y2 = event.clientY;
 			render();
-		} else {
-			const { xaxis, yaxis } = elements;
-			xaxis.style.top = event.clientY + 'px';
-			yaxis.style.left = event.clientX + 'px';
+		}
+
+		const { colors } = state;
+		if (colors.length === 0) {
+			const { xaxis2, yaxis2 } = elements;
+			xaxis2.style.top = event.clientY + 'px';
+			yaxis2.style.left = event.clientX + 'px';
 		}
 	}
 
@@ -190,10 +202,10 @@
 		canvas.width = width;
 
 		if (width / height > 600 / 228) {
-			canvas.style.height = (height / width) * 228 + 'px';
+			canvas.style.height = (600 * height) / width + 'px';
 			canvas.style.width = '600px';
 		} else {
-			canvas.style.width = (width / height) * 600 + 'px';
+			canvas.style.width = (228 * width) / height + 'px';
 			canvas.style.height = '228px';
 		}
 
@@ -281,14 +293,14 @@
 		luminosity = luminosity.slice(0, 10);
 
 		// Store measurement
-		state.luminosity = luminosity;
+		state.colors = luminosity;
 
 		render();
 	}
 
 	function render() {
-		const { grid, selection, stats } = elements;
-		const { luminosity, x1, x2, y1, y2, zoom } = state;
+		const { color1, color2, grid, selection, stats } = elements;
+		const { colors, x1, x2, y1, y2, zoom } = state;
 
 		// Position selection window
 		const style = selection.style;
@@ -307,22 +319,41 @@
 		}
 
 		// Fill in the stats on measurement
-		stats.classList.toggle('is-visible', luminosity.length > 0);
+		stats.classList.toggle('is-visible', colors.length > 1);
 
-		if (luminosity.length === 0) return;
+		// We only got no or only one color.
+		if (colors.length <= 1) return;
 
 		stats.style.zoom = 1 / zoom;
 
+		// Find maximum ratio and populate it on screen.
+		let maxRatio = 1;
+		for (let iy = 0; iy < colors.length; iy++) {
+			for (let ix = iy; ix < colors.length; ix++) {
+				let ratio = calculateRatio(
+					colors[ix].luminosity,
+					colors[iy].luminosity
+				);
+				if (maxRatio < ratio) {
+					maxRatio = ratio;
+					color1.setAttribute('title', '#' + colors[ix].hex);
+					color1.style.background = '#' + colors[ix].hex;
+					color2.setAttribute('title', '#' + colors[iy].hex);
+					color2.style.background = '#' + colors[iy].hex;
+					elements.ratio.innerHTML = sprintRatio(ratio);
+				}
+			}
+		}
+
+		// Get rid of the previous table content
 		while (grid.firstElementChild) {
 			grid.removeChild(grid.firstElementChild);
 		}
 
-		const colors = luminosity.filter((c1) => !c1.disabled);
-		colors.sort((c1, c2) => c2.count - c1.count);
-
-		let hexes =
-			'<tr><th></th><th class="white"><span>Percen-<br/>tage</span></th>';
-		for (let ix = 0; ix < colors.length; ix++) {
+		// Start building the contents for the table
+		let html =
+			'<thead><tr><th class="empty"></th><th class="white"><span>Percen-<br/>tage</span></th>';
+		for (let ix = 1; ix < colors.length; ix++) {
 			const lx = colors[ix];
 			let nameColor = lx.name + '<br/>' + lx.hex;
 			let title =
@@ -345,13 +376,11 @@
 			th += '" style="background:#' + lx.hex + '"';
 			th += '" title="' + title + '">';
 
-			hexes += th + '<span>' + nameColor + '</span></th>';
+			html += th + '<span>' + nameColor + '</span></th>';
 		}
-		hexes += '</tr>';
+		html += '</tr></thead>';
 
-		let html = '<thead>' + hexes + '</thead>';
-
-		for (let iy = 0; iy < colors.length; iy++) {
+		for (let iy = 0; iy < colors.length - 1; iy++) {
 			const ly = colors[iy];
 			let title =
 				ly.name +
@@ -380,26 +409,27 @@
 				ly.percentage.toFixed(ly.percentage > 10 ? 1 : 2) +
 				'%</td>';
 
-			for (let ix = 0; ix < colors.length; ix++) {
+			for (let ix = 1; ix < colors.length; ix++) {
 				const lx = colors[ix];
 
 				const ratio = calculateRatio(lx.luminosity, ly.luminosity);
 
-				// if (1 || (iy <= ix && lx.color != ly.color)) {
-				if (iy != ix) {
-					html += '<td style="background:';
+				html += '<td class="';
+				if (iy < ix) {
 					if (ratio < 3.0) {
-						html += '#D00';
+						html += 'red';
 					} else if (ratio < 4.5) {
-						html += '#A50';
+						html += 'orange';
 					} else {
-						html += '#070';
+						html += 'green';
 					}
+					if (ratio === maxRatio) html += ' max" title="Max contrast';
 					// Don't round up 4.4999 to 4.5, it is just not the same
-					html += '">' + sprintRatio(ratio) + '</td>';
+					html += '">' + sprintRatio(ratio);
 				} else {
-					html += '<td>----</td>';
+					html += 'empty"></td>';
 				}
+				html += '</td>';
 			}
 
 			html += '</tr>';
@@ -408,12 +438,18 @@
 		grid.innerHTML = html;
 	}
 
+	/**
+	 * Calucate contrast ratio between two luminosity colors.
+	 */
 	function calculateRatio(l1, l2) {
 		return l1 > l2 ? l1 / l2 : l2 / l1;
 	}
 
+	/**
+	 * Return ratio as string and be careful not to round up any values.
+	 * For example 4.4999 to 4.5, it is just not the same
+	 */
 	function sprintRatio(ratio) {
-		// Don't round up 4.4999 to 4.5, it is just not the same
 		ratio = Math.floor(ratio * 100) / 100;
 		return ratio < 10 ? ratio.toFixed(2) : ratio.toFixed(1);
 	}
@@ -447,8 +483,8 @@
 	}
 
 	// https://github.com/gdkraus/wcag2-color-contrast
-	// We forgo the square root for performance reason,  since we only
-	// compare distances and not interested in specific values.
+	// We forgo the square root for performance reason, since we only compare
+	// distances to each other and not interested in specific values.
 	function calcEuclideanDistance(c1, c2) {
 		return (c1.r - c2.r) ** 2 + (c1.g - c2.g) ** 2 + (c1.b - c2.b) ** 2;
 	}
@@ -456,7 +492,7 @@
 	/**
 	 * Converts an RGB color value to HEX.
 	 *
-	 * @param   String  rgb     RGB 0xRRGGBB
+	 * @param   Number  rgb     RGB 0xRRGGBB
 	 * @return  Array           Hex "RRGGBB"
 	 */
 	function rgb2hex(rgb) {

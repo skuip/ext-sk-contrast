@@ -26,5 +26,5 @@
 	"name": "SK Contrast",
 	"permissions": ["<all_urls>"],
 	"short_name": "SK Contrast",
-	"version": "1.0.6"
+	"version": "1.0.7"
 }
