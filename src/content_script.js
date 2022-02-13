@@ -19,49 +19,50 @@
 	};
 
 	const colorNames = {
-		'007398': 'Petrol',
-		'009ECE': 'Information',
-		'073973': 'Blue3',
-		'0C7DBB': 'Link blue',
-		'29A61B': 'Confirmation',
-		'2E2E2E': 'Grey8',
-		'3679E0': 'Blue2',
-		'3C1276': 'Purple3',
-		'44C6F4': 'Info ondark',
-		'496E01': 'Green3',
-		'505050': 'Grey7',
-		'53565A': 'Dark gray',
-		'53B848': 'Confirm ondark',
-		'661CCA': 'Purple2',
-		'737373': 'Grey6',
-		'8ED700': 'Green2',
-		'969696': 'Grey5',
-		'976500': 'Yellow3',
-		A92B1D: 'Red3',
-		ACD2FF: 'Blue1',
-		B9B9B9: 'Grey4',
-		BB84FF: 'Purple1',
-		C0F25D: 'Green1',
-		C83727: 'Warning',
-		CDE4FF: 'Pale blue',
-		DCDCDC: 'Grey3',
-		DCDCDD: 'Cool grey',
-		//E9711C: 'Elsevier orange',
-		EBEBEB: 'Grey2',
-		F5F5F5: 'Grey1',
-		F73E29: 'Red2',
-		FDD300: 'Yellow2',
-		FEB7B7: 'Red1',
-		FF6A5A: 'Warning ondark',
-		FF6C00: 'Primary orange',
-		FF8200: 'Elsevier orange ondark',
-		FFEC84: 'Yellow1',
-		FFF0E4: 'Pale orange',
-		FFFFFF: 'White',
+		0x007398: 'Petrol',
+		0x009ece: 'Info',
+		0x073973: 'Blue3',
+		0x0c7dbb: 'Link blue',
+		0x29a61b: 'Confirm',
+		0x2e2e2e: 'Grey8',
+		0x3679e0: 'Blue2',
+		0x3c1276: 'Purple3',
+		0x44c6f4: 'Info DRK',
+		0x496e01: 'Green3',
+		0x505050: 'Grey7',
+		0x53565a: 'Dark<br/>gray',
+		0x53b848: 'Confirm DRK',
+		0x661cca: 'Purple2',
+		0x737373: 'Grey6',
+		0x8ed700: 'Green2',
+		0x8e8e8e: 'Grey5',
+		0x976500: 'Yellow3',
+		0xa92b1d: 'Red3',
+		0xacd2ff: 'Blue1',
+		0xb9b9b9: 'Grey4',
+		0xbb84ff: 'Purple1',
+		0xc0f25d: 'Green1',
+		0xc83727: 'Warning',
+		0xcde4ff: 'Pale blue',
+		0xdcdcdc: 'Grey3',
+		0xdcdcdd: 'Cool grey',
+		0xeb6500: 'A11Y Orange',
+		0xebebeb: 'Grey2',
+		0xf5f5f5: 'Grey1',
+		0xf73e29: 'Red2',
+		0xfdd300: 'Yellow2',
+		0xfeb7b7: 'Red1',
+		0xff6a5a: 'Warning DRK',
+		0xff6c00: 'Primary orange',
+		0xff8200: 'Orange DRK',
+		0xffec84: 'Yellow1',
+		0xfff0e4: 'Pale orange',
+		0xffffff: 'White',
 	};
 
 	const state = {
 		colors: [],
+		minMax: [],
 		drag: false,
 		x1: -1,
 		x2: 0,
@@ -139,8 +140,7 @@
 
 	function handleDragStart(event) {
 		// No modifier keys
-		if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey)
-			return;
+		if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
 		// Only left button
 		if (event.button !== 0) return;
 
@@ -153,10 +153,6 @@
 		state.y1 = event.clientY;
 		state.drag = true;
 		state.colors = [];
-
-		const { xaxis1, yaxis1 } = elements;
-		xaxis1.style.top = event.clientY + 'px';
-		yaxis1.style.left = event.clientX + 'px';
 
 		div.shadowRoot.addEventListener('mouseup', handleDragStop);
 	}
@@ -215,82 +211,158 @@
 
 		// Get raw image data
 		const data = ctx.getImageData(0, 0, width, height).data;
+		const dataLength = data.length;
 
 		// Get all unique colors.
-		const colors = {};
-		for (let i = 0; i < data.length; i += 4) {
-			const rgb =
-				(data[i] << 16) | (data[i + 1] << 8) | (data[i + 2] << 0);
-			if (!colors[rgb]) colors[rgb] = 0;
-			colors[rgb]++;
+		const colors = { 0: [0, 0] };
+		let lastRgb = 0;
+		let lastCnt = 0;
+
+		// Scan vertically
+		for (let x = 0; x < width * 4; x += 4) {
+			for (let y = 0; y < dataLength; y += 4 * width) {
+				const i = x + y;
+				const rgb = (data[i] << 16) | (data[i + 1] << 8) | (data[i + 2] << 0);
+
+				if (!colors[rgb]) colors[rgb] = [0, 0];
+				colors[rgb][0]++;
+
+				if (lastRgb != rgb) {
+					if (colors[lastRgb][1] < lastCnt) colors[lastRgb][1] = lastCnt;
+					lastCnt = 1;
+					lastRgb = rgb;
+				} else {
+					lastCnt++;
+				}
+			}
+		}
+
+		// Rescan horizontally
+		lastRgb = 0;
+		lastCnt = 0;
+		for (let y = 0; y < dataLength; y += 4 * width) {
+			for (let x = 0; x < width * 4; x += 4) {
+				const i = x + y;
+				const rgb = (data[i] << 16) | (data[i + 1] << 8) | (data[i + 2] << 0);
+
+				if (lastRgb != rgb) {
+					if (colors[lastRgb][1] < lastCnt) colors[lastRgb][1] = lastCnt;
+					lastCnt = 1;
+					lastRgb = rgb;
+				} else {
+					lastCnt++;
+				}
+			}
 		}
 
 		// Convert from object to array
-		const pixels = (width * height) / 100;
+		const percentPixels = (width * height) / 100;
 
 		let luminosity = Object.keys(colors).map((key) => {
-			const hex = rgb2hex(+key).toUpperCase();
-			const lumi = calculateLuminosity(+key);
-			return {
-				color: +key,
-				r: (key >> 16) & 0xff,
-				g: (key >> 8) & 0xff,
-				b: (key >> 0) & 0xff,
-				count: colors[key],
-				name: colorNames[hex] || '',
-				hex,
-				luminosity: lumi,
-				percentage: colors[key] / pixels,
+			key = +key;
+			const rgb = rgb2obj(key);
+
+			let color = {
+				hex: rgb2hex(key),
+				count: colors[key][0],
+				stripe: colors[key][1],
+				name: colorNames[key] || '',
+				color: key,
+				luminosity: calculateLuminosity(key),
+				percentage: colors[key][0] / percentPixels,
+				...rgb,
 			};
+
+			return color;
 		});
 
 		// Order array on usage
-		luminosity = luminosity.filter((c1) => c1.count > 2);
+		luminosity.sort((c1, c2) => {
+			let r = c2.stripe - c1.stripe;
+			if (r) return r;
+			r = c2.count - c1.count;
+			return r;
+		});
 
-		luminosity.sort((c1, c2) => c2.luminosity - c1.luminosity);
+		for (let i1 = 0; i1 < luminosity.length; i1++) {
+			const c1 = luminosity[i1];
 
-		while (luminosity.length > 10) {
-			let candidates = [];
-			for (let i = luminosity.length - 1; i > 1; i--) {
-				const c1 = luminosity[i - 2];
-				const c2 = luminosity[i - 1];
-				const c3 = luminosity[i - 0];
-				const distance1 = calcEuclideanDistance(c1, c2);
-				const distance2 = calcEuclideanDistance(c2, c3);
+			for (let i2 = luminosity.length - 1; i2 > i1; i2--) {
+				const c2 = luminosity[i2];
 
-				if (c1.count > c2.count && c2.count < c3.count) {
-					candidates.push({
-						distance: distance1 < distance2 ? distance1 : distance2,
-						...c2,
-					});
+				if (isEuclideanDistance(c1, c2, 2)) {
+					// Color are very close, move pixels over to the bigger one
+					c1.count += c2.count;
+					c2.count = 0;
+					break;
 				}
 			}
-
-			// Hmm, no candidates for removal
-			if (!candidates.length) break;
-
-			candidates.sort((c1, c2) => {
-				if (c1.distance != c2.distance) {
-					return c1.distance - c2.distance;
-				} else {
-					return c1.count - c2.count;
-				}
-			});
-
-			// Make sure we get at least 10 less candidates than colors.
-			candidates = candidates.slice(0, luminosity.length - 10);
-
-			candidates = candidates.map((c) => c.color);
-
-			luminosity = luminosity.filter((c) => {
-				return candidates.indexOf(c.color) === -1;
-			});
 		}
-		// console.log(JSON.parse(JSON.stringify(luminosity)));
 
-		// Make sure to limit to 10 colors.
-		luminosity.sort((c1, c2) => c2.count - c1.count);
+		// Get rid of single pixel colors
+		luminosity = luminosity.filter((c1) => c1.count > 1 || c1.stripe > 1);
+
+		// Find maximum contrast
+		luminosity.sort((c1, c2) => c2.luminosity - c1.luminosity);
+		state.minMax = [luminosity[0], luminosity[luminosity.length - 1]];
+
+		// Order array on longest pattern
+		luminosity.sort((c1, c2) => {
+			let r = c2.stripe - c1.stripe;
+			if (r) return r;
+			r = c2.count - c1.count;
+			return r;
+		});
+
+		//		luminosity = luminosity.reduce((acc, cur) => {
+		//			if (acc.findIndex((item) => item.color === cur.color) === -1) {
+		//				acc.push(cur);
+		//			}
+		//			return acc;
+		//		}, []);
+		//
+		//		while (luminosity.length > 10) {
+		//			let candidates = [];
+		//			for (let i = luminosity.length - 1; i > 1; i--) {
+		//				const c1 = luminosity[i - 2];
+		//				const c2 = luminosity[i - 1];
+		//				const c3 = luminosity[i - 0];
+		//				const distance1 = calcEuclideanDistance(c1, c2);
+		//				const distance2 = calcEuclideanDistance(c2, c3);
+		//
+		//				if (c1.count > c2.count && c2.count < c3.count) {
+		//					candidates.push({
+		//						distance: distance1 < distance2 ? distance1 : distance2,
+		//						...c2,
+		//					});
+		//				}
+		//			}
+		//
+		//			// Hmm, no candidates for removal
+		//			if (!candidates.length) break;
+		//
+		//			candidates.sort((c1, c2) => {
+		//				if (c1.distance != c2.distance) {
+		//					return c1.distance - c2.distance;
+		//				} else {
+		//					return c1.count - c2.count;
+		//				}
+		//			});
+		//
+		//			// Make sure we get at least 10 less candidates than colors.
+		//			candidates = candidates.slice(0, luminosity.length - 10);
+		//
+		//			candidates = candidates.map((c) => c.color);
+		//
+		//			luminosity = luminosity.filter((c) => {
+		//				return candidates.indexOf(c.color) === -1;
+		//			});
+		//		}
+		//
+		//		// Make sure to limit to 10 colors.
+		//		luminosity.sort((c1, c2) => c2.count - c1.count);
 		luminosity = luminosity.slice(0, 10);
+		console.log(luminosity);
 
 		// Store measurement
 		state.colors = luminosity;
@@ -299,8 +371,8 @@
 	}
 
 	function render() {
-		const { color1, color2, grid, selection, stats } = elements;
-		const { colors, x1, x2, y1, y2, zoom } = state;
+		const { color1, color2, grid, selection, stats, xaxis1, yaxis1 } = elements;
+		const { colors, minMax, x1, x2, y1, y2, zoom } = state;
 
 		// Position selection window
 		const style = selection.style;
@@ -316,59 +388,47 @@
 			style.width = width + 'px';
 			style.top = top + 'px';
 			style.left = left + 'px';
+
+			xaxis1.style.top = y1 + 'px';
+			yaxis1.style.left = x1 + 'px';
+		} else {
+			xaxis1.style.top = '0px';
+			yaxis1.style.left = '0px';
 		}
 
 		// Fill in the stats on measurement
-		stats.classList.toggle('is-visible', colors.length > 1);
+		stats.classList.toggle('is-visible', colors.length > 0);
 
 		// We only got no or only one color.
-		if (colors.length <= 1) return;
+		if (colors.length <= 0) return;
 
 		stats.style.zoom = 1 / zoom;
 
-		// Find maximum ratio and populate it on screen.
-		let maxRatio = 1;
-		for (let iy = 0; iy < colors.length; iy++) {
-			for (let ix = iy; ix < colors.length; ix++) {
-				let ratio = calculateRatio(
-					colors[ix].luminosity,
-					colors[iy].luminosity
-				);
-				if (maxRatio < ratio) {
-					maxRatio = ratio;
-					color1.setAttribute('title', '#' + colors[ix].hex);
-					color1.style.background = '#' + colors[ix].hex;
-					color2.setAttribute('title', '#' + colors[iy].hex);
-					color2.style.background = '#' + colors[iy].hex;
-					elements.ratio.innerHTML = sprintRatio(ratio);
-				}
-			}
-		}
+		let maxRatio = calculateRatio(minMax[0].luminosity, minMax[1].luminosity);
+		color1.setAttribute('title', '#' + minMax[0].hex);
+		color1.style.background = '#' + minMax[0].hex;
+		color2.setAttribute('title', '#' + minMax[1].hex);
+		color2.style.background = '#' + minMax[1].hex;
+		elements.ratio.innerHTML = maxRatio.toFixed(10);
 
 		// Get rid of the previous table content
 		while (grid.firstElementChild) {
 			grid.removeChild(grid.firstElementChild);
 		}
 
+		if (colors.length === 1) {
+			colors.push(colors[0]);
+		}
+
 		// Start building the contents for the table
-		let html =
-			'<thead><tr><th class="empty"></th><th class="white"><span>Percen-<br/>tage</span></th>';
-		for (let ix = 1; ix < colors.length; ix++) {
+		let html = '<thead><tr><th class="empty"></th>';
+		for (let ix = 0; ix < colors.length; ix++) {
 			const lx = colors[ix];
 			let nameColor = lx.name + '<br/>' + lx.hex;
-			let title =
-				lx.name +
-				'\n#' +
-				lx.hex +
-				'\n' +
-				lx.percentage.toFixed(2) +
-				'%';
+			let title = lx.name + '\n#' + lx.hex + '\n' + lx.percentage.toFixed(2) + '%';
 
 			let th = '<th class="';
-			if (
-				calculateRatio(lx.luminosity, 0.05) <
-				calculateRatio(lx.luminosity, 1.05)
-			) {
+			if (calculateRatio(lx.luminosity, 0.05) < calculateRatio(lx.luminosity, 1.05)) {
 				th += 'white';
 			} else {
 				th += 'black';
@@ -378,44 +438,44 @@
 
 			html += th + '<span>' + nameColor + '</span></th>';
 		}
-		html += '</tr></thead>';
+		html += '</tr>';
 
-		for (let iy = 0; iy < colors.length - 1; iy++) {
+		if (false) {
+			html += '<tr><th>Percentage</th>';
+			for (let ix = 0; ix < colors.length; ix++) {
+				const lx = colors[ix];
+				html +=
+					'<td style="font-size:12px">' +
+					lx.percentage.toFixed(lx.percentage > 10 ? 1 : 2) +
+					'%</td>';
+			}
+			html += '</tr></thead>';
+		}
+
+		for (let iy = 0; iy < colors.length; iy++) {
 			const ly = colors[iy];
-			let title =
-				ly.name +
-				'\n#' +
-				ly.hex +
-				'\n' +
-				ly.percentage.toFixed(2) +
-				'%';
+			let title = ly.name + '\n#' + ly.hex + '\n' + ly.percentage.toFixed(2) + '%';
 
 			html += '<tr><th class="';
-			if (
-				calculateRatio(ly.luminosity, 0.05) <
-				calculateRatio(ly.luminosity, 1.05)
-			) {
+			if (calculateRatio(ly.luminosity, 0.05) < calculateRatio(ly.luminosity, 1.05)) {
 				html += 'white';
 			} else {
 				html += 'black';
 			}
 			html += '" style="background:#' + ly.hex + '" title="';
 			html += title + '">';
-			html += ly.name + '<br/>';
-			html += ly.hex;
+			html += ly.name.replace('<br/>', ' ') + '<br/>';
+			html += ly.hex + ' ';
+			html += ly.percentage.toFixed(ly.percentage > 10 ? 1 : 2) + '%';
 			html += '</th>';
-			html +=
-				'<td style="font-size:12px">' +
-				ly.percentage.toFixed(ly.percentage > 10 ? 1 : 2) +
-				'%</td>';
 
-			for (let ix = 1; ix < colors.length; ix++) {
+			for (let ix = 0; ix < colors.length; ix++) {
 				const lx = colors[ix];
 
 				const ratio = calculateRatio(lx.luminosity, ly.luminosity);
 
 				html += '<td class="';
-				if (iy < ix) {
+				if (iy !== ix) {
 					if (ratio < 3.0) {
 						html += 'red';
 					} else if (ratio < 4.5) {
@@ -489,6 +549,13 @@
 		return (c1.r - c2.r) ** 2 + (c1.g - c2.g) ** 2 + (c1.b - c2.b) ** 2;
 	}
 
+	// We forgo the square root for performance reason, since we only compare
+	// distances to each other and not interested in specific values.
+	function isEuclideanDistance(c1, c2, d) {
+		d *= d;
+		return (c1.r - c2.r) ** 2 <= d && (c1.g - c2.g) ** 2 <= d && (c1.b - c2.b) ** 2 <= d;
+	}
+
 	/**
 	 * Converts an RGB color value to HEX.
 	 *
@@ -496,9 +563,17 @@
 	 * @return  Array           Hex "RRGGBB"
 	 */
 	function rgb2hex(rgb) {
-		let hex = rgb.toString(16);
-		if (hex.length < 6) hex = ('00000' + hex).substr(-6);
-		return hex;
+		return (0x01000000 + rgb).toString(16).substr(-6).toUpperCase();
+	}
+
+	/**
+	 * Converts an RGB color value to object.
+	 *
+	 * @param   Number  rgb     RGB 0xRRGGBB
+	 * @return  Object          {r: 0xRR, g: 0xGG, b: 0xBB }
+	 */
+	function rgb2obj(rgb) {
+		return { r: (rgb >> 16) & 0xff, g: (rgb >> 8) & 0xff, b: rgb & 0xff };
 	}
 
 	// Listen for messages from the background process.

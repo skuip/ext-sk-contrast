@@ -1,19 +1,20 @@
 {
 	"background": {
-		"scripts": ["background.js"],
-		"persistent": false
+		"service_worker": "background.js"
 	},
-	"commands": {
-		"_execute_browser_action": {
-			"description": "Toggle extension"
-		}
-	},
-	"web_accessible_resources": ["shadow-root.html"],
-	"browser_action": {
+	"action": {
 		"default_icon": {
 			"16": "icon-16.png",
 			"32": "icon-32.png",
 			"128": "icon-128.png"
+		}
+	},
+	"commands": {
+		"_execute_action": {
+			"description": "Toggle extension",
+			"suggested_key": {
+				"default": "Alt+Shift+X"
+			}
 		}
 	},
 	"description": "Select a part of the viewport and compute the maximum contrast ratio",
@@ -22,9 +23,9 @@
 		"32": "icon-32.png",
 		"128": "icon-128.png"
 	},
-	"manifest_version": 2,
+	"manifest_version": 3,
 	"name": "SK Contrast",
-	"permissions": ["activeTab"],
+	"permissions": ["activeTab", "scripting"],
 	"short_name": "SK Contrast",
 	"version": "1.0.7"
 }
